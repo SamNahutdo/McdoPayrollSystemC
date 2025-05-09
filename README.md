@@ -9,20 +9,12 @@ Marchus *********
 David *******
 
 
-******
-*******
-********
-*********
-**********
-
-
-
 *******
 this are teacher based suggestions in our system so this is well presented
 *******
 ***🔧 Functions and Their Uses***
 
-Function Name	Purpose
+***Function Name	Purpose*
 
 main()____________Entry point. Loads data from file and shows the main menu.
 
@@ -65,7 +57,7 @@ paySalaries()______Pays out salaries based on work days and deductions.
 
 ***📚 Arrays Used and Their Purposes***
 
-Array Name_____________Type_____________Description
+***Array Name_____________Type_____________Description*
 
 ids[]__________________int______________Stores unique ID for each employee.
 
@@ -102,7 +94,7 @@ balances[]_____________int______________Tracks salary available to be withdrawn.
 
 ***🔤 Strings Used and Why***
 
-String/Char Array	Description
+***String/Char Array	Description*
 
 names[i]________________Stores each employee's name (used for printing and searching).
 
