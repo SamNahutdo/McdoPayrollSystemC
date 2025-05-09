@@ -1,5 +1,6 @@
-***CCS 103 FINAL PROJECT***
+***MCDO PAYROLL SYSTEM USING C***
 
+***CCS 103 FINAL PROJECT***
 Members
 
 Sam Nahutdo - Programmer
