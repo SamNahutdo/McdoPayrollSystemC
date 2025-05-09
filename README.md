@@ -10,7 +10,7 @@ David *******
 
 
 *******
-this is teacher based suggestions in our system so this is well presented 
+These are teacher based suggestions in our system, so this are well presented.
 *******
 ***🔧 Functions and Their Uses***
 
