@@ -2,8 +2,7 @@
 
 Members
 
-Sam Nahutdo
-
+Sam Nahutdo - Programmer
 Marchus *********
 
 David *******
