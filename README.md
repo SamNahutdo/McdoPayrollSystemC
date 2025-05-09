@@ -107,6 +107,6 @@ FILENAME (macro)________Name of the file used for saving/loading employee data.
 ID:_____________________Auto-assigned integers (1–20)
 
 
-
+*******
 - i will be updated the flowchart of how they work, the rest of the functions, strings, arrays, and how to use it
 
