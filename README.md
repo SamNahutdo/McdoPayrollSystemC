@@ -9,10 +9,18 @@ Marchus *********
 David *******
 
 
+******
+*******
+********
+*********
+**********
+
+
+
 *******
 this are teacher based suggestions in our system so this is well presented
 *******
-***🔧 Functions and Their Uses ***
+***🔧 Functions and Their Uses***
 
 Function Name	Purpose
 
