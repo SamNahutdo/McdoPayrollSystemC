@@ -97,7 +97,7 @@ deductionReason[i]______Holds a short explanation of the deduction reason.
 
 FILENAME (macro)________Name of the file used for saving/loading employee data.
 
-ID: Auto-assigned integers (1–20)
+ID:_____________________Auto-assigned integers (1–20)
 
 
 
