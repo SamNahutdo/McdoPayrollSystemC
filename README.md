@@ -8,9 +8,15 @@ Marchus *********
 
 David *******
 
+
+
+
 The McDo Payroll System is a menu-driven C program that manages employee payroll, attendance, and salary-related tasks in a simulated fast-food restaurant setting. The application features two main access levels: ADMIN and EMPLOYEE.
 
 From the user’s point of view, the system works as follows:
+
+
+
 
 ADMIN View:
 
@@ -29,6 +35,9 @@ Deduct salary for specific reasons
 View attendance
 
 Pay salaries every 7 days based on recorded attendance minus deductions
+
+
+
 
 
 EMPLOYEE View:
