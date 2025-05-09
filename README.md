@@ -6,7 +6,7 @@ Members
 
 Sam Nahutdo - Programmer
 
-Marchus *********
+Marchus ********
 
 David *******
 
