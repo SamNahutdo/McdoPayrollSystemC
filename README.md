@@ -11,7 +11,7 @@ David *******
 
 *******
 this are teacher based suggestions in our system so this is well presented
-
+*******
 ***🔧 Functions and Their Uses ***
 
 Function Name	Purpose
@@ -52,6 +52,9 @@ markAttendance()___Marks clock-in and clock-out for employees (if implemented).
 
 paySalaries()______Pays out salaries based on work days and deductions.
 
+
+*******
+
 ***📚 Arrays Used and Their Purposes***
 
 Array Name_____________Type_____________Description
@@ -85,6 +88,9 @@ lastIn[]_______________time_t___________Stores last clock-in time (used for atte
 lastOut[]______________time_t___________Stores last clock-out time.
 
 balances[]_____________int______________Tracks salary available to be withdrawn.
+
+
+*******
 
 ***🔤 Strings Used and Why***
 
