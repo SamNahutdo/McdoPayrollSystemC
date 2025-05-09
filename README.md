@@ -1,1 +1,11 @@
-#CCS 103 FINAL PROJECT
+***CCS 103 FINAL PROJECT***
+
+Members
+Sam Nahutdo
+Marchus *********
+David *******
+
+
+
+
+
