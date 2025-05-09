@@ -10,7 +10,7 @@ David *******
 
 
 *******
-this are teacher based suggestions in our system so this is well presented
+this is teacher based suggestions in our system so this is well presented 
 *******
 ***🔧 Functions and Their Uses***
 
@@ -108,4 +108,5 @@ ID:_____________________Auto-assigned integers (1–20)
 
 
 
+- i will be updated the flowchart of how they work, the rest of the functions, strings, arrays, and how to use it
 
