@@ -20,6 +20,7 @@
 
 
 
+
 // Include library
 #include <stdio.h>
 #include <string.h>
@@ -64,6 +65,7 @@
 
 
 
+
 // Employee data storage
 int employeeCount = 0;
 int ids[MAX_EMPLOYEES];
@@ -74,8 +76,14 @@ int deductions[MAX_EMPLOYEES];
 char deductionReason[MAX_EMPLOYEES][100];
 float hoursWorked[MAX_EMPLOYEES];
 int lastPaidDay[MAX_EMPLOYEES];
-int attendance[MAX_EMPLOYEES];
+int clockIns[MAX_EMPLOYEES];
+int clockOuts[MAX_EMPLOYEES];
+int daysWorked[MAX_EMPLOYEES];
+int isClockedIn[MAX_EMPLOYEES];
+time_t lastIn[MAX_EMPLOYEES];
+time_t lastOut[MAX_EMPLOYEES];
 int balances[MAX_EMPLOYEES];
+
 
 
 
@@ -104,13 +112,13 @@ void removeEmployee();
 void deductSalary();
 int findEmployee(int id);
 void viewBalance(int i);
-void withdrawBalance(int i);
 void viewDeducted(int i);
 void saveToFile();
 void loadFromFile();
 void viewAttendance();
-void markAttendance(int i);
+void markAttendance(int i, int isIn);
 void paySalaries();
+
 
 
 
@@ -150,7 +158,6 @@ int main() {
 
 
 
-
 // MAIN MENU
 void mainMenu() {
     int choice;
@@ -167,7 +174,12 @@ void mainMenu() {
         printf("\n\n\t\t\t\t                                      2. EMPLOYEE     ");
         printf("\n\n\t\t\t\t                                      3. EXIT         ");
         printf("\n\n\t\t\t\t                                      Choice: ");
-        scanf("%d", &choice);
+
+        if (scanf("%d", &choice) != 1) {
+            printf("\n\t\t\t\t                                     Invalid input. Please enter a number.\n");
+            while (getchar() != '\n');
+            continue;
+        }
 
         switch (choice) {
             case 1:
@@ -224,22 +236,27 @@ int verifyPin() {
 
 
 
+
 // ADMIN MENU
 void adminMenu() {
     system("cls");
     int choice;
     do {
         printf("\n\n\t\t\t\t                                      ADMIN MENU          ");
-        printf("\n\n\t\t\t\t                                      1. VIEW EMPLOYEE    ");
-        printf("\n\n\t\t\t\t                                      2. ADD EMPLOYEE     ");
-        printf("\n\n\t\t\t\t                                      3. UPDATE DETAIL    ");
+        printf("\n\n\t\t\t\t                                      1. VIEW   EMPLOYEE  ");
+        printf("\n\n\t\t\t\t                                      2. ADD    EMPLOYEE  ");
+        printf("\n\n\t\t\t\t                                      3. UPDATE   DETAIL  ");
         printf("\n\n\t\t\t\t                                      4. REMOVE EMPLOYEE  ");
-        printf("\n\n\t\t\t\t                                      5. DEDUCT SALARY    ");
+        printf("\n\n\t\t\t\t                                      5. DEDUCT   SALARY  ");
         printf("\n\n\t\t\t\t                                      6. VIEW ATTENDANCE  ");
-        printf("\n\n\t\t\t\t                                      7. PAY SALARIES     ");
+        printf("\n\n\t\t\t\t                                      7. PAY    SALARIES  ");
         printf("\n\n\t\t\t\t                                      8. BACK             ");
         printf("\n\n\n\t\t\t\t                                      Choice: ");
-        scanf("%d", &choice);
+        if (scanf("%d", &choice) != 1) {
+            printf("\n\t\t\t\t                               Invalid input. Please enter a number.\n");
+            while (getchar() != '\n');
+            continue;
+        }
 
         switch (choice) {
             case 1:
@@ -263,9 +280,14 @@ void adminMenu() {
             case 7:
                 paySalaries();
                 break;
+            case 8:
+                break;
+            default:
+                printf("\n\t\t\t\t                                     Invalid choice.\n");
         }
     } while (choice != 8);
 }
+
 
 
 
@@ -291,14 +313,19 @@ void viewEmployees() {
     }
 
     printf("\n\t\t   %-5s      %-25.25s      %-20s      %-10s      %-15s      %-10s\n",
-            "ID", "Name", "Position", "Salary/Day", "Days Worked", "Total Salary");
+            "ID",   "Name",   "Position",   "Salary/Day",   "Days Worked",   "Total Salary");
 
     for (int i = 0; i < employeeCount; i++) {
-        int totalSalary = salaries[i] * attendance[i];
+        int totalSalary = salaries[i] * daysWorked[i];
+        totalSalary -= deductions[i];
+        if (totalSalary < 0) totalSalary = 0;
+
+
         printf("\t\t   %-5d      %-25.25s      %-20.20s      Php%-7d      %-15d      Php%-7d\n",
-                ids[i],   names[i],   positions[i],   salaries[i],   attendance[i],   totalSalary);
+                ids[i],   names[i],   positions[i],   salaries[i],   daysWorked[i],   totalSalary);
     }
 }
+
 
 
 
@@ -323,11 +350,27 @@ void addEmployee() {
         return;
     }
 
-    ids[employeeCount] = employeeCount + 1;
-
     getchar();
+    char tempName[50];
+    int nameExists = 0;
+
     printf("\n\t\t\t\t                                      Enter Name: ");
-    scanf(" %[^\n]", names[employeeCount]);
+    scanf(" %[^\n]", tempName);
+
+    for (int i = 0; i < employeeCount; i++) {
+        if (strcmp(tempName, names[i]) == 0) {
+            nameExists = 1;
+            break;
+        }
+    }
+
+    if (nameExists) {
+        printf("\n\t\t\t\t                             Name already exists. Cannot add employee.\n");
+        return;
+    }
+
+    strcpy(names[employeeCount], tempName);
+    ids[employeeCount] = employeeCount + 1;
 
     int pos;
     printf("\n\t\t\t\t                                      SELECT NEW POSITION           \n");
@@ -355,16 +398,22 @@ void addEmployee() {
             return;
     }
 
-    attendance[employeeCount]   = 0;
-    deductions[employeeCount]   = 0;
-    hoursWorked[employeeCount]  = 0.0;
-    lastPaidDay[employeeCount]  = -1;
-    balances[employeeCount]     = 0;
+    deductions[employeeCount] = 0;
+    hoursWorked[employeeCount] = 0.0;
+    lastPaidDay[employeeCount] = -1;
+    balances[employeeCount] = 0;
+    clockIns[employeeCount] = 0;
+    clockOuts[employeeCount] = 0;
+    daysWorked[employeeCount] = 0;
+    isClockedIn[employeeCount] = 0;
+    lastIn[employeeCount] = 0;
+    lastOut[employeeCount] = 0;
 
     employeeCount++;
     saveToFile();
     printf("\n\t\t\t\t                                      Employee added successfully.\n");
 }
+
 
 
 
@@ -397,9 +446,8 @@ void updateEmployee() {
     printf("\n\t\t\t\t                                      UPDATE EMPLOYEE DETAILS  \n");
     printf("\n\t\t\t\t                                      1. Update Name           \n");
     printf("\n\t\t\t\t                                      2. Update Position       \n");
-    printf("\n\t\t\t\t                                      3. Update Attendance     \n");
-    printf("\n\t\t\t\t                                      4. Back                  \n");
-    printf("\n\t\t\t\t                                      Choice: ");
+    printf("\n\t\t\t\t                                      3. Back                  \n");
+    printf("\n\n\t\t\t\t                                      Choice: ");
     scanf("%d", &choice);
 
     switch (choice) {
@@ -413,7 +461,7 @@ void updateEmployee() {
             printf("\n\t\t\t\t                                      1. Service Crew     \n");
             printf("\n\t\t\t\t                                      2. Cooker           \n");
             printf("\n\t\t\t\t                                      3. Counter Crew     \n");
-            printf("\n\t\t\t\t                                      Choice: ");
+            printf("\n\n\t\t\t\t                                      Choice: ");
             scanf("%d", &choice);
             switch (choice) {
                 case 1:
@@ -432,10 +480,6 @@ void updateEmployee() {
                     printf("\n\t\t\t\t                                      Invalid position.\n");
                     return;
             }
-            break;
-        case 3:
-            printf("\n\t\t\t\t                                      Enter new attendance days: ");
-            scanf("%d", &attendance[i]);
             break;
     }
 
@@ -458,12 +502,18 @@ void updateEmployee() {
 
 
 
+
 // Remove employee
 void removeEmployee() {
     system("cls");
     int id, i;
-    printf("\n\t\t\t\t                                  Enter Employee ID to remove: ");
+    printf("\n\t\t\t\t                                   Enter Employee ID to remove: ");
     scanf("%d", &id);
+
+    char confirm;
+    printf("\n\t\t\t\t                        Are you sure you want to remove this employee? (y/n): ");
+    scanf(" %c", &confirm);
+    if (confirm != 'y' && confirm != 'Y') return;
 
     i = findEmployee(id);
     if (i == -1) {
@@ -480,7 +530,12 @@ void removeEmployee() {
         strcpy(deductionReason[j], deductionReason[j + 1]);
         hoursWorked[j] = hoursWorked[j + 1];
         lastPaidDay[j] = lastPaidDay[j + 1];
-        attendance[j] = attendance[j + 1];
+        clockIns[j] = clockIns[j + 1];
+        clockOuts[j] = clockOuts[j + 1];
+        daysWorked[j] = daysWorked[j + 1];
+        isClockedIn[j] = isClockedIn[j + 1];
+        lastIn[j] = lastIn[j + 1];
+        lastOut[j] = lastOut[j + 1];
         balances[j] = balances[j + 1];
     }
 
@@ -504,11 +559,14 @@ void removeEmployee() {
 
 
 
+
 // Deduct salary
 void deductSalary() {
     system("cls");
-    int id, amount, i;
-    char reason[100];
+    int id, i;
+    float sssContribution = 0.0;
+    float pagIbigContribution = 0.0;
+    float philHealthContribution = 0.0;
 
     printf("\n\t\t\t                                      Enter Employee ID to deduct from: ");
     scanf("%d", &id);
@@ -518,18 +576,32 @@ void deductSalary() {
         return;
     }
 
-    printf("\n\t\t\t\t                                    Enter deduction amount: ");
-    scanf("%d", &amount);
-    getchar();
-    printf("\n\t\t\t\t                                      Enter reason for deduction: ");
-    scanf(" %[^\n]", reason);
+    sssContribution = salaries[i] * 0.045;
+    if (sssContribution > 900) {
+        sssContribution = 900;
+    }
 
-    deductions[i] += amount;
-    strcpy(deductionReason[i], reason);
+    if (salaries[i] < 1500) {
+        pagIbigContribution = salaries[i] * 0.01;
+    } else {
+        pagIbigContribution = salaries[i] * 0.02;
+        if (salaries[i] > 10000) {
+            pagIbigContribution = 10000 * 0.02; 
+        }
+    }
+
+    philHealthContribution = 100.0;
+
+    deductions[i] += (int)(sssContribution + pagIbigContribution + philHealthContribution);
+
+    strcpy(deductionReason[i], "SSS, PhilHealth, Pag-IBIG");
+
     saveToFile();
 
-    printf("\n\t\t\t\t                                      Salary deducted.\n");
+    printf("\n\t\t\t\t                                      Deductions applied.\n");
+    printf("\n\t\t\t\t                          SSS: %.2f, PhilHealth: %.2f, Pag-IBIG: %.2f\n", sssContribution, philHealthContribution, pagIbigContribution);
 }
+
 
 
 
@@ -549,17 +621,36 @@ void deductSalary() {
 // View all employee attendance
 void viewAttendance() {
     system("cls");
-    if (employeeCount == 0) {
-        printf("\n\t\t\t\t                                    No employees yet\n");
+    int id, i;
+
+    printf("\n\t\t\t\t                                  Enter Employee ID: ");
+    scanf("%d", &id);
+
+    i = findEmployee(id);
+    if (i == -1) {
+        printf("\n\t\t\t\t                                      ID not found.\n");
         return;
     }
 
-    printf("\n\t\t\t   %-5s      %-25.25s      %-20s      %-20s      %s\n",
-            "ID", "Name", "Position", "Attendance (Days)", "Hours Worked");
+    printf("\n\t\t\t\t                                %s: %-5d  |  %s: %-25.25s \n", "ID", ids[i], "Name", names[i]);
 
-    for (int i = 0; i < employeeCount; i++) {
-        printf("\t\t\t   %-5d      %-25.25s      %-20s      %-20d        %2.f\n",   
-            ids[i],   names[i],   positions[i],   attendance[i],   hoursWorked[i]);
+    printf("\n\t\t\t\t                            %-30s     %-30s  \n", "Clock In Time", "Clock Out Time");
+
+    for (int j = 0; j < clockIns[i] || j < clockOuts[i]; j++) {
+        char inTimeStr[35] = "N/A";
+        char outTimeStr[35] = "N/A";
+
+        if (j < clockIns[i]) {
+            time_t inTime = lastIn[i];
+            strftime(inTimeStr, sizeof(inTimeStr), "%Y-%m-%d %H:%M:%S", localtime(&inTime));
+        }
+
+        if (j < clockOuts[i]) {
+            time_t outTime = lastOut[i]; 
+            strftime(outTimeStr, sizeof(outTimeStr), "%Y-%m-%d %H:%M:%S", localtime(&outTime));
+        }
+
+        printf("\n\t\t\t\t                            %-30s     %-30s \n", inTimeStr, outTimeStr);
     }
 }
 
@@ -580,7 +671,6 @@ void viewAttendance() {
 
 // Function to pay salaries
 void paySalaries() {
-    system("cls");
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     int currentDayOfYear = tm.tm_yday;
@@ -592,16 +682,16 @@ void paySalaries() {
             (currentDayOfYear < lastPaidDay[i] &&
             (365 - lastPaidDay[i] + currentDayOfYear) >= PAY_PERIOD_DAYS)) {
 
-            int totalSalary = salaries[i] * attendance[i];
-                totalSalary -= deductions[i];
+            int totalSalary = salaries[i] * daysWorked[i];
+            totalSalary -= deductions[i];
+            if (totalSalary < 0) totalSalary = 0;
 
-            printf("\n\t\t                                      Paying employee \"%s\": Php %d\n", names[i], totalSalary);
-            balances[i]    = totalSalary;
+            printf("\n\t\t                                      Paying employee \"%s\": Php %d\n",   names[i],   totalSalary);
+            balances[i] = totalSalary;
             lastPaidDay[i] = currentDayOfYear;
-            attendance[i]  = 0;
-            hoursWorked[i] = 0.0;
+            daysWorked[i] = 0; 
         } else {
-            printf("\n\t\t                                      It's not time to pay employee \"%s\" yet.\n", names[i]);
+            printf("\n\t\t                                      It's not time to pay employee \"%s\" yet.\n",   names[i]);
         }
     }
     saveToFile();
@@ -623,10 +713,12 @@ void paySalaries() {
 
 
 
+
 // EMPLOYEE MENU
 void employeeMenu() {
     system("cls");
     int id, i, choice;
+
     printf("\n\t\t\t\t                                  Enter Employee ID: ");
     scanf("%d", &id);
 
@@ -638,31 +730,41 @@ void employeeMenu() {
 
     do {
         printf("\n\n\t\t\t\t                                      EMPLOYEE MENU         \n");
-        printf("\n\t\t\t                                ID: %-5d  Name: %-25.25s  Attendance: %d days\n\n",   ids[i],   names[i],   attendance[i]);
-        printf("\n\t\t\t\t                                      1. VIEW BALANCE         \n");
-        printf("\n\t\t\t\t                                      2. WITHDRAW SALARY      \n");
-        printf("\n\t\t\t\t                                      3. VIEW DEDUCTED        \n");
-        printf("\n\t\t\t\t                                      4. MARK ATTENDANCE (In) \n");
+        printf("\n\t\t\t                                ID: %-5d  Name: %-25.25s  Attendance: %d days\n", ids[i], names[i], daysWorked[i]);
+        printf("\n\n\n\t\t\t\t                                      1. VIEW  BALANCE    \n");
+        printf("\n\t\t\t\t                                      2. VIEW DEDUCTED        \n");
+        printf("\n\t\t\t\t                                      3. CLOCK      IN        \n");
+        printf("\n\t\t\t\t                                      4. CLOCK     OUT        \n");
         printf("\n\t\t\t\t                                      5. BACK                 \n");
-        printf("\n\t\t\t\t                                      Choice: ");
-        scanf("%d", &choice);
+        printf("\n\n\t\t\t\t                                      Choice: ");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("\n\t\t\t\t                           Invalid input. Please enter a number.\n");
+            while (getchar() != '\n');
+            continue;
+        }
 
         switch (choice) {
             case 1:
                 viewBalance(i);
                 break;
             case 2:
-                withdrawBalance(i);
-                break;
-            case 3:
                 viewDeducted(i);
                 break;
-            case 4:
-                markAttendance(i);
+            case 3:
+                markAttendance(i, 1); 
                 break;
+            case 4:
+                markAttendance(i, 0); 
+                break;
+            case 5:
+                break;
+            default:
+                printf("\n\t\t\t\t                                     Invalid choice.\n");
         }
     } while (choice != 5);
 }
+
 
 
 
@@ -705,62 +807,6 @@ void viewBalance(int i) {
 
 
 
-// Withdraw salary
-void withdrawBalance(int i) {
-    system("cls");
-    int amount, choice;
-
-    printf("\n\t\t\t\t                                      Balance: %d", balances[i]);
-    printf("\n\n\t\t\t\t                                      Withdrawal Options ");
-    printf("\n\n\t\t\t\t                                      1. Cash            ");
-    printf("\n\n\t\t\t\t                                      2. GCash           ");
-    printf("\n\n\t\t\t\t                                      3. Maya            ");
-    printf("\n\n\t\t\t\t                                      Choice: ");
-    scanf("%d", &choice);
-
-    printf("\n\t\t\t\t                              Enter amount to withdraw: ");
-    scanf("%d", &amount);
-
-    if (amount <= balances[i]) {
-        balances[i] -= amount;
-        switch (choice) {
-            case 1:
-                printf("\n\t\t\t\t                            Withdrawal successful. New Balance: %d\n", balances[i]);
-                break;
-            case 2:
-                printf("\n\t\t\t\t                            Successfully transferred Php %d to your GCash account.\n", amount);
-                printf("\n\t\t\t\t                            New Balance: %d\n", balances[i]);
-                break;
-            case 3:
-                printf("\n\t\t\t\t                            Successfully transferred Php %d to your Maya account.\n", amount);
-                printf("\n\t\t\t\t                            New Balance: %d\n", balances[i]);
-                break;
-            default:
-                printf("\n\t\t\t\t                            Invalid choice. Withdrawal cancelled.\n");
-                balances[i] += amount; 
-        }
-    } else {
-        printf("\n\t\t\t\t                              Not enough balance to withdraw.\n");
-    }
-    saveToFile();
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Show deductions
 void viewDeducted(int i) {
     system("cls");
@@ -783,13 +829,29 @@ void viewDeducted(int i) {
 
 
 
-// Mark attendance (In)
-void markAttendance(int i) {
-    system("cls");
-    hoursWorked[i] += HOURS_PER_DAY;
-    attendance[i] += 1;
+
+// Mark attendance IN and OUT
+void markAttendance(int i, int isIn) {
+    time_t now = time(NULL);
+
+    if (isIn) {
+        isClockedIn[i] = 1;
+        clockIns[i]++;
+        lastIn[i] = now;
+        printf("\n\t\t\t\t                               Clocked IN successfully.\n");
+    } else {
+        if (!isClockedIn[i]) {
+            printf("\n\t\t\t\t                               Not clocked IN. Cannot clock OUT.\n");
+            return;
+        }
+
+        isClockedIn[i] = 0;
+        clockOuts[i]++;
+        lastOut[i] = now;
+        daysWorked[i]++;
+        printf("\n\t\t\t\t                               Clocked OUT successfully. Day counted.\n");
+    }
     saveToFile();
-    printf("\n\t\t\t\t                               Attendance marked for today.\n");
 }
 
 
@@ -830,6 +892,7 @@ int findEmployee(int id) {
 
 
 
+
 // Save employees to file
 void saveToFile() {
     FILE *file = fopen(FILENAME, "w");
@@ -839,10 +902,11 @@ void saveToFile() {
 
     fprintf(file, "%d\n", employeeCount);
     for (int i = 0; i < employeeCount; i++) {
-        fprintf(file, "%d %s %s %d %d %f %d %s %d %d\n", ids[i], names[i], positions[i], salaries[i], deductions[i], hoursWorked[i], lastPaidDay[i], deductionReason[i], attendance[i], balances[i]);
+        fprintf(file, "%d %s %s %d %d %f %d %s %d %d %d %d %ld %ld %d\n",   ids[i],   names[i],   positions[i],   salaries[i],   deductions[i],   hoursWorked[i],   lastPaidDay[i],   deductionReason[i],   clockIns[i],   clockOuts[i],   daysWorked[i],   isClockedIn[i],   (long)lastIn[i],   (long)lastOut[i],   balances[i]);
     }
     fclose(file);
 }
+
 
 
 
@@ -862,13 +926,29 @@ void saveToFile() {
 // Load employees from file
 void loadFromFile() {
     FILE *file = fopen(FILENAME, "r");
-    if (!file) return;
-    fscanf(file, "%d", &employeeCount);
+    if (!file) {
+        return;
+    }
+
+    if (fscanf(file, "%d", &employeeCount) != 1) {
+        fprintf(stderr, "Error reading employee count from file.\n");
+        fclose(file);
+        return;
+    }
+
     for (int i = 0; i < employeeCount; i++) {
-        fscanf(file, "%d %s %s %d %d %f %d %s %d %d", &ids[i], names[i], positions[i], &salaries[i], &deductions[i], &hoursWorked[i], &lastPaidDay[i], deductionReason[i], &attendance[i], &balances[i]);
+        long lin, lout;
+        if (fscanf(file, "%d %s %s %d %d %f %d %s %d %d %d %d %ld %ld %d",   &ids[i],   names[i],   positions[i],   &salaries[i],   &deductions[i],   &hoursWorked[i],   &lastPaidDay[i],   deductionReason[i],   &clockIns[i],   &clockOuts[i],   &daysWorked[i],   &isClockedIn[i],    &lin,   &lout,   &balances[i]) != 15) {
+            fprintf(stderr, "Error reading employee data from file (employee %d).\n", i + 1);
+            fclose(file);
+            return;
+        }
+        lastIn[i] = (time_t)lin;
+        lastOut[i] = (time_t)lout;
     }
     fclose(file);
 }
+
 
 
 
