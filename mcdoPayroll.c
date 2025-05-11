@@ -47,7 +47,7 @@
 #define MAX_EMPLOYEES 20
 #define ADMIN_PIN 1234
 #define FILENAME "mcdoPayroll.txt"
-#define PAY_PERIOD_DAYS 7
+#define PAY_PERIOD_DAYS 30
 #define HOURS_PER_DAY 8
 
 
@@ -242,18 +242,17 @@ void adminMenu() {
     system("cls");
     int choice;
     do {
-        printf("\n\n\t\t\t\t                                      ADMIN MENU          ");
-        printf("\n\n\t\t\t\t                                      1. VIEW   EMPLOYEE  ");
-        printf("\n\n\t\t\t\t                                      2. ADD    EMPLOYEE  ");
-        printf("\n\n\t\t\t\t                                      3. UPDATE   DETAIL  ");
-        printf("\n\n\t\t\t\t                                      4. REMOVE EMPLOYEE  ");
-        printf("\n\n\t\t\t\t                                      5. DEDUCT   SALARY  ");
-        printf("\n\n\t\t\t\t                                      6. VIEW ATTENDANCE  ");
-        printf("\n\n\t\t\t\t                                      7. PAY    SALARIES  ");
-        printf("\n\n\t\t\t\t                                      8. BACK             ");
-        printf("\n\n\n\t\t\t\t                                      Choice: ");
+        printf("\n\n\t\t\t\t                                        ADMIN MENU      ");
+        printf("\n\n\t\t\t\t                                    1. VIEW   EMPLOYEE  ");
+        printf("\n\n\t\t\t\t                                    2. ADD    EMPLOYEE  ");
+        printf("\n\n\t\t\t\t                                    3. UPDATE   DETAIL  ");
+        printf("\n\n\t\t\t\t                                    4. REMOVE EMPLOYEE  ");
+        printf("\n\n\t\t\t\t                                    5. DEDUCT   SALARY  ");
+        printf("\n\n\t\t\t\t                                    6. VIEW ATTENDANCE  ");
+        printf("\n\n\t\t\t\t                                    7. BACK             ");
+        printf("\n\n\n\t\t\t\t                                  Choice: ");
         if (scanf("%d", &choice) != 1) {
-            printf("\n\t\t\t\t                               Invalid input. Please enter a number.\n");
+            printf("\n\t\t\t\t                            Invalid input. Please enter a number.\n");
             while (getchar() != '\n');
             continue;
         }
@@ -277,15 +276,10 @@ void adminMenu() {
             case 6:
                 viewAttendance();
                 break;
-            case 7:
-                paySalaries();
-                break;
-            case 8:
-                break;
             default:
                 printf("\n\t\t\t\t                                     Invalid choice.\n");
         }
-    } while (choice != 8);
+    } while (choice != 7);
 }
 
 
@@ -675,7 +669,7 @@ void paySalaries() {
     struct tm tm = *localtime(&t);
     int currentDayOfYear = tm.tm_yday;
 
-    printf("\n\t\t\t\t                                      PAYING SALARIES\n");
+    printf("\n\t\t\t\t                                      PAYING MONTHLY SALARIES\n");
     for (int i = 0; i < employeeCount; i++) {
         if (lastPaidDay[i] == -1 ||
             (currentDayOfYear - lastPaidDay[i] >= PAY_PERIOD_DAYS) ||
@@ -686,16 +680,16 @@ void paySalaries() {
             totalSalary -= deductions[i];
             if (totalSalary < 0) totalSalary = 0;
 
-            printf("\n\t\t                                      Paying employee \"%s\": Php %d\n",   names[i],   totalSalary);
+            printf("\n\t\t                                      Paying MONTHLY salary to \"%s\": Php %d\n", names[i], totalSalary);
             balances[i] = totalSalary;
             lastPaidDay[i] = currentDayOfYear;
             daysWorked[i] = 0; 
         } else {
-            printf("\n\t\t                                      It's not time to pay employee \"%s\" yet.\n",   names[i]);
+            printf("\n\t\t                                      \"%s\" hasn't completed 30 working days yet.\n", names[i]);
         }
     }
     saveToFile();
-    printf("\n\t\t\t\t                                      Salaries paid.\n");
+    printf("\n\t\t\t\t                                      Monthly salaries processed.\n");
 }
 
 
@@ -848,7 +842,37 @@ void markAttendance(int i, int isIn) {
         isClockedIn[i] = 0;
         clockOuts[i]++;
         lastOut[i] = now;
-        daysWorked[i]++;
+        daysWorked[i]++;  // Increment worked days
+        
+        // Automatically process salary after 30 days
+        if (daysWorked[i] >= 30) {
+            // Calculate deductions
+            float sss = salaries[i] * 30 * 0.045;  // 4.5% of monthly salary
+            if (sss > 900) sss = 900;
+            
+            float pagIbig;
+            float monthlySalary = salaries[i] * 30;
+            if (monthlySalary < 1500) {
+                pagIbig = monthlySalary * 0.01;
+            } else {
+                pagIbig = monthlySalary * 0.02;
+                if (pagIbig > 200) pagIbig = 200;  // Max Pag-IBIG contribution
+            }
+            
+            float philhealth = 100.0;
+            
+            int totalDeductions = (int)(sss + pagIbig + philhealth);
+            int totalSalary = (salaries[i] * 30) - totalDeductions;
+            
+            if (totalSalary < 0) totalSalary = 0;
+            
+            // Update balance and reset counters
+            balances[i] += totalSalary;
+            daysWorked[i] -= 30;
+            
+            printf("\n\t\t\t\t                               Salary paid automatically: Php%d\n", totalSalary);
+        }
+        
         printf("\n\t\t\t\t                               Clocked OUT successfully. Day counted.\n");
     }
     saveToFile();
