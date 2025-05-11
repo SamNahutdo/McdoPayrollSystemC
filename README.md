@@ -52,7 +52,6 @@ viewAttendance()___Displays attendance logs (if implemented).
 
 markAttendance()___Marks clock-in and clock-out for employees (if implemented).
 
-paySalaries()______Pays out salaries based on work days and deductions.
 
 
 *******
